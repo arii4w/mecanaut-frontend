@@ -1,6 +1,12 @@
 <template>
   <div class="machinery-form-container">
     <h2 class="form-title">{{ title }}</h2>
+    <div
+        v-if="notification.visible"
+        :class="['toast-notification', notification.type]"
+    >
+      {{ notification.message }}
+    </div>
 
     <form @submit.prevent="onSubmit" class="machinery-form">
       <!-- === Datos básicos === -->
@@ -86,7 +92,7 @@
               <select
                 v-model.number="metric.metricId"
                 :disabled="isEditMode"
-                :class="['form-input', { invalid: errors.metrics?.[index]?.metricId }]"
+                :class="['form-input', { invalid: errors[`metrics[${index}].metricId`] }]"
               >
                 <option :value="null">Seleccionar métrica</option>
                 <option
@@ -106,7 +112,7 @@
                 min="0"
                 step="0.01"
                 placeholder="Valor"
-                :class="['form-input', { invalid: errors.metrics?.[index]?.value }]"
+                :class="['form-input', { invalid: errors[`metrics[${index}].value`] }]"
               />
             </div>
 
@@ -183,12 +189,14 @@ interface Props {
   machinery?: any
   title?: string
   productionLineId?: number | string | null
+  plantId?: number | string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   machinery: null,
   title: 'Nueva Maquinaria',
-  productionLineId: null
+  productionLineId: null,
+  plantId: null
 })
 
 const emit = defineEmits(['save', 'cancel'])
@@ -245,10 +253,13 @@ const schema = yup.object({
     .min(1, 'Debe agregar al menos una métrica válida')
 })
 
-const { handleSubmit, errors } = useForm({
+const { handleSubmit, errors,setValues } = useForm({
   validationSchema: schema,
   initialValues: formData
 })
+watch(formData, (newValues) => {
+  setValues(newValues)
+}, { deep: true })
 
 watch(errors, (val) => {
   console.log('Errores de validación:', val);
@@ -312,45 +323,77 @@ const productionLineIdNum = computed(() => {
   return Number(props.productionLineId)
 })
 
+/* ────────────────── Notificaciones ────────────────── */
+const notification = reactive({
+  visible: false,
+  message: '',
+  type: 'success' // puede ser 'success' o 'error'
+})
+
+const showNotification = (msg: string, type: 'success' | 'error') => {
+  notification.message = msg
+  notification.type = type
+  notification.visible = true
+
+  // Ocultar la notificación después de 3 segundos si es un error
+  // (Si es éxito, el modal se cerrará antes de que esto termine)
+  if (type === 'error') {
+    setTimeout(() => {
+      notification.visible = false
+    }, 4000)
+  }
+}
+
+/* ────────────────── Submit Actualizado ────────────────── */
 const onSubmit = handleSubmit(async () => {
   try {
     const validMetrics = formData.metrics
-      .filter((m) => m.metricId !== null && m.value !== null)
-      .map((m) => ({
-        metricId: Number(m.metricId),
-        value: Number(m.value),
-        measuredAt: m.measuredAt
-      }))
+        .filter((m) => m.metricId !== null && m.value !== null)
+        .map((m) => ({
+          metricId: Number(m.metricId),
+          value: Number(m.value),
+          measuredAt: m.measuredAt
+        }))
 
     const machineData = {
       serialNumber: formData.serialNumber,
       name: formData.name,
       manufacturer: formData.manufacturer,
-      plantId: 1, // ajusta según lógica de tu app
+      // Usamos el ID de la planta que viene desde la vista
+      plantId: props.plantId ? Number(props.plantId) : null,
       model: formData.model,
       type: formData.type,
       powerConsumption:
-        formData.powerConsumption !== null
-          ? Number(formData.powerConsumption)
-          : null,
+          formData.powerConsumption !== null
+              ? Number(formData.powerConsumption)
+              : null,
       metrics: validMetrics
     }
-
     const createdMachine = await MachineryApiService.createMachine(machineData)
 
     if (productionLineIdNum.value !== null) {
       await MachineryApiService.assignMachineToProductionLine(
-        createdMachine.id,
-        productionLineIdNum.value
+          createdMachine.id,
+          productionLineIdNum.value
       )
     }
 
-    emit('save', createdMachine)
-  } catch (err) {
+    // 1. Mostrar notificación de éxito
+    showNotification('Maquinaria creada con éxito', 'success')
+
+    // 2. Esperar 1.5 segundos para que el usuario lo lea, y luego cerrar el modal
+    setTimeout(() => {
+      emit('save', createdMachine)
+    }, 1500)
+
+  } catch (err: any) {
     console.error('Error guardando máquina:', err)
+
+    // 3. Mostrar notificación de error capturando el mensaje del Service
+    const errorMessage = err.message || 'Ocurrió un error inesperado al crear la maquinaria'
+    showNotification(errorMessage, 'error')
   }
 })
-
 /* ────────────────── Cancelar ────────────────── */
 const onCancel = () => emit('cancel')
 
@@ -663,6 +706,38 @@ const getMetricUnit = (metricId: number | null) => {
   color: var(--clr-danger, #e53935);
   font-size: 0.95em;
   margin: 0.5em 0 0 1em;
+}
+
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out forwards;
+
+  &.success {
+    background-color: #4caf50; // Verde de éxito
+  }
+
+  &.error {
+    background-color: var(--clr-danger, #e53935); // Rojo de error
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 // Soporte para tema oscuro

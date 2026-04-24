@@ -2,7 +2,7 @@ import axios from 'axios';
 import { MaintenancePlanAssembler } from './maintenance-plan.assembler';
 
 const http = axios.create({
-  baseURL: 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1/dynamic-maintenance-plans',
+  baseURL: import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans',
   timeout: 8000,
 });
 
@@ -11,7 +11,7 @@ export class MaintenancePlanService {
   async getAllPlans() {
     const token = localStorage.getItem('token');
     const response = await fetch(
-      'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1/dynamic-maintenance-plans?plantLineId=1',
+      import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans?plantLineId=1',
       {
         method: 'GET',
         headers: {

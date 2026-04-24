@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseEndpoint = 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1';
+const baseEndpoint = import.meta.env.VITE_API_BASE_URL+'/api/v1';
 const usersEndpoint = `${baseEndpoint}/users`;
 
 const http = axios.create({

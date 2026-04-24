@@ -1,5 +1,11 @@
 <template>
   <div class="container">
+    <div
+        v-if="notification.visible"
+        :class="['toast-notification', notification.type]"
+    >
+      {{ notification.message }}
+    </div>
     <header class="breadcrumb-header">
       <h1>Gestión de Maquinaria</h1>
     </header>
@@ -124,9 +130,10 @@
     <div v-if="showMachineModal" class="modal-overlay" @click="closeMachineModal">
       <div class="modal-container" @click.stop>
         <interact-machinery
-          :production-line-id="selectedProductionLineId"
-          @save="saveMachine"
-          @cancel="closeMachineModal"
+            :plant-id="selectedPlantId"
+            :production-line-id="selectedProductionLineId"
+            @save="saveMachine"
+            @cancel="closeMachineModal"
         />
       </div>
     </div>
@@ -134,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref,reactive, computed, onMounted } from 'vue';
 import { MachineryApiService } from '../services/machinery-api.service.js';
 import InteractMachinery from '../components/interact-machinery.component.vue';
 import AppRecordTable from '../../../shared/components/record-table.component.vue';
@@ -189,6 +196,24 @@ const getStatusText = (status) => {
     'MAINTENANCE': 'En Mantenimiento'
   };
   return statusMap[status] || 'Desconocido';
+};
+
+/* ────────────────── Notificaciones ────────────────── */
+const notification = reactive({
+  visible: false,
+  message: '',
+  type: 'success'
+});
+
+const showNotification = (msg, type) => {
+  notification.message = msg;
+  notification.type = type;
+  notification.visible = true;
+
+  // Ocultar automáticamente después de 4 segundos
+  setTimeout(() => {
+    notification.visible = false;
+  }, 4000);
 };
 
 // Funciones para la búsqueda y filtrado
@@ -345,9 +370,11 @@ const onRowClick = ({ row }) => {
 };
 
 const openNewMachineModal = () => {
+  if (!selectedProductionLineId.value) {
+    showNotification('Por favor, selecciona una Planta y una Línea de Producción antes de registrar una maquinaria.', 'error');    return;
+  }
   showMachineModal.value = true;
 };
-
 const closeMachineModal = () => {
   showMachineModal.value = false;
 };
@@ -555,6 +582,40 @@ onMounted(() => {
   background-color: var(--clr-surface, #fff);
   border-radius: var(--radius-md, 8px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+
+/* ────────────────── Estilos de Notificación ────────────────── */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.toast-notification.success {
+  background-color: #4caf50;
+}
+
+.toast-notification.error {
+  background-color: var(--clr-danger, #e53935);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Tablet: apila los paneles */

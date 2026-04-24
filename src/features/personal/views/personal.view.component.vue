@@ -31,6 +31,10 @@ export default {
       { key: 'role', label: 'Role', type: 'texto', filterable: true },
       { key: 'info', label: 'Info', type: 'informacion' }
     ];
+    const roleTranslations = {
+      'RoleAdmin': 'Administrador',
+      'RoleTechnical': 'Técnico'
+    };
     const loadPersonal = async () => {
       try {
         const data = await PersonalApiService.getPersonals();
@@ -39,8 +43,7 @@ export default {
           code: p.code,
           name: `${p.firstName} ${p.lastName}`,
           email: p.email,
-          role: p.role
-        }));
+          role: roleTranslations[p.role] || p.role        }));
       } catch (error) {
         console.error('Error loading personal:', error);
       }

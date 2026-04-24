@@ -4,7 +4,7 @@ import axios from 'axios';
 class AuthService extends ApiService {
   constructor() {
     super();
-    this.baseUrl = 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1';
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL+'/api/v1';
     
     // Inicializar token desde localStorage si existe
     const token = localStorage.getItem('token');
@@ -184,7 +184,7 @@ setAuthToken(token) {
     try {
       
       // Intentar hacer una petición simple al endpoint base para verificar conectividad
-      const response = await fetch('https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1/authentication/health', {
+      const response = await fetch(import.meta.env.VITE_API_BASE_URL+'/api/v1/authentication/health', {
         method: 'HEAD',
         mode: 'cors'
       });

@@ -3,7 +3,7 @@ import { MaintenanceCalendarAssembler } from './maintenance-calendar.assembler';
 
 
 const http = axios.create({
-  baseURL: 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1/dynamic-maintenance-plans',
+  baseURL: import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans',
   timeout: 8000,
 });
 

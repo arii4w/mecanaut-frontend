@@ -76,6 +76,26 @@ const menuOptions = computed(() => {
       title: t('sidebar.menu.calendar'), 
       icon: 'pi pi-calendar' 
     },*/
+
+    {
+      path: '/machinery',
+      title: t('sidebar.menu.assetManagement.title'),
+      icon: 'pi pi-cog',
+      submenu: [
+        {
+          path: '/machinery',
+          title: t('sidebar.menu.assetManagement.machinery')
+        },
+        {
+          path: '/gestion-activos/lineas-produccion',
+          title: t('sidebar.menu.assetManagement.productionLines')
+        },
+        {
+          path: '/gestion-activos/plantas',
+          title: t('sidebar.menu.assetManagement.plants')
+        }
+      ]
+    },
     {
       path: '/inventario-parts',
       title: t('sidebar.menu.inventory.title'),
@@ -88,25 +108,6 @@ const menuOptions = computed(() => {
         { 
           path: '/purchase-orders', 
           title: t('sidebar.menu.inventory.purchaseOrders')
-        }
-      ]
-    },
-    {
-      path: '/machinery',
-      title: t('sidebar.menu.assetManagement.title'),
-      icon: 'pi pi-cog',
-      submenu: [
-        { 
-          path: '/machinery', 
-          title: t('sidebar.menu.assetManagement.machinery')
-        },
-        { 
-          path: '/gestion-activos/lineas-produccion', 
-          title: t('sidebar.menu.assetManagement.productionLines')
-        },
-        { 
-          path: '/gestion-activos/plantas', 
-          title: t('sidebar.menu.assetManagement.plants')
         }
       ]
     },

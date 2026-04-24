@@ -142,12 +142,12 @@
             <div class="tasks-section">
               <h4>Tareas:</h4>
               <div class="tasks-list">
-                <div v-for="(task, i) in getTasksForOrder(order)" :key="i" class="task-item">
+                <div v-for="(task, i) in orderData[order.id].tasks" :key="i" class="task-item">
                   <label class="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      v-model="task.completed"
-                      @change="updateTaskCompletion(order.id, i, task.completed)"
+                    <input
+                        type="checkbox"
+                        v-model="task.completed"
+                        @change="updateTaskCompletion(order.id, i, task.completed)"
                     />
                     <span class="custom-checkbox"></span>
                     <span>{{ task.label }}</span>
@@ -385,7 +385,41 @@ export default {
         inventoryParts.value = [];
       }
     };
+    const loadWorkOrders = async () => {
+      try {
+        loadingOrders.value = true;
+        const data = await ExecutionService.getWorkOrdersWithMachineries(selectedProductionLine.value);
+        availableWorkOrders.value = data;
 
+        let filteredData = data;
+        if (selectedWorkOrder.value) {
+          filteredData = data.filter(order => order.id === selectedWorkOrder.value);
+        }
+
+        workOrders.value = filteredData;
+
+        filteredData.forEach(order => {
+          if (!orderData.value[order.id]) {
+            orderData.value[order.id] = {
+              images: [],
+              products: [{ partId: '', quantity: 1 }],
+              // NUEVO: Guardamos las tareas aquí y las clonamos para que sean independientes
+              tasks: getTasksForOrder(order).map(t => ({ ...t })),
+              observations: ''
+            };
+          }
+        });
+
+        if (selectedProductionLine.value) {
+          await loadSavedData();
+        }
+      } catch (error) {
+        console.error('Error loading work orders:', error);
+      } finally {
+        loadingOrders.value = false;
+      }
+    };
+    /*
     const loadWorkOrders = async () => {
       try {
         loadingOrders.value = true;
@@ -426,6 +460,7 @@ export default {
         loadingOrders.value = false;
       }
     };
+    */
 
     const handlePlantChange = async () => {
       selectedProductionLine.value = null;
@@ -609,7 +644,52 @@ export default {
     const removeImage = (orderId, imageIndex) => {
       orderData.value[orderId].images.splice(imageIndex, 1);
     };
+    const loadSavedData = async () => {
+      try {
+        const savedOrdersList = await ExecutionService.getExecutedWorkOrdersByProductionLine(selectedProductionLine.value);
+        if (!savedOrdersList || savedOrdersList.length === 0) return;
 
+        for (const order of workOrders.value) {
+          const matchingSavedOrder = savedOrdersList.find(so => so.code === order.code);
+
+          if (matchingSavedOrder) {
+            const fullExecutedData = await ExecutionService.getExecutedWorkOrder(matchingSavedOrder.id);
+
+            // 1. Restaurar el estado de los checkboxes
+            if (orderData.value[order.id].tasks) {
+              orderData.value[order.id].tasks.forEach(task => {
+                // Si el nombre de la tarea está en la lista de ejecutadas, marcamos el check
+                if (fullExecutedData.executedTasks && fullExecutedData.executedTasks.includes(task.label)) {
+                  task.completed = true;
+                }
+              });
+            }
+
+            // 2. Restaurar productos e imágenes (como lo teníamos)
+            const savedProducts = (fullExecutedData.usedProducts || []).map(p => ({
+              partId: p.productId.toString(),
+              quantity: p.quantity
+            }));
+
+            const savedImages = (fullExecutedData.executionImages || []).map(url => ({
+              url: url,
+              preview: url,
+              uploading: false,
+              file: null
+            }));
+
+            // 3. Actualizar el resto de campos
+            orderData.value[order.id].images = savedImages;
+            orderData.value[order.id].products = savedProducts.length > 0 ? savedProducts : [{ partId: '', quantity: 1 }];
+            orderData.value[order.id].observations = fullExecutedData.annotations || '';
+            orderData.value[order.id].savedExecutedOrderId = fullExecutedData.id;
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando datos guardados:', error);
+      }
+    };
+    /*
     const loadSavedData = async () => {
       try {
         // Obtener órdenes ejecutadas guardadas para esta línea de producción
@@ -661,7 +741,7 @@ export default {
         console.error('Error cargando datos guardados:', error);
       }
     };
-
+*/
     const saveProgress = async (orderId) => {
       try {
         const order = workOrders.value.find(o => o.id === orderId);
@@ -669,6 +749,8 @@ export default {
         // Preparar datos para guardar
         const executedOrderData = {
           code: order.code,
+          //aqui le falta enviar un string en "annotations"
+          annotations: data.observations || '',
           executionDate: new Date().toISOString(),
           productionLineId: selectedProductionLine.value,
           intervenedMachineIds: order.machineIds || [],
@@ -706,7 +788,7 @@ export default {
         // Preparar datos para completar la orden
         const completionData = {
           code: order.code,
-          observations: data.observations || '',
+          annotations: data.observations || '',
           productionLineId: selectedProductionLine.value,
           machineIds: order.machineries?.map(m => m.id) || [],
           technicianIds: order.technicianIds || [],

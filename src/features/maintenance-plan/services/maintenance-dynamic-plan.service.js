@@ -2,13 +2,13 @@ import axios from 'axios';
 import { MaintenanceDynamicPlanAssembler } from './maintenance-dynamic-plan.assembler.js';
 
 const http = axios.create({
-  baseURL: 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL+'/api',
   timeout: 8000,
 });
 
 // Nueva instancia para la API externa
 const externalHttp = axios.create({
-  baseURL: 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL+'/api',
   timeout: 8000,
 });
 
@@ -31,7 +31,7 @@ export class MaintenanceDynamicPlanService {
   async getAllPlans() {
     const token = localStorage.getItem('token');
     const response = await fetch(
-      'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1/dynamic-maintenance-plans?plantLineId=1',
+      import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans?plantLineId=1',
       {
         method: 'GET',
         headers: {
@@ -83,7 +83,7 @@ export class MaintenanceDynamicPlanService {
       // Enviar POST
       const token = localStorage.getItem('token');
       const response = await fetch(
-        'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1/dynamic-maintenance-plans',
+        import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans',
         {
           method: 'POST',
           headers: {

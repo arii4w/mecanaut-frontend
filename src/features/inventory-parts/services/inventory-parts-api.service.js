@@ -4,7 +4,7 @@ import axios from 'axios';
 import { InventoryPartAssembler } from '../../shared/services/inventory-part.assembler.js';
 import { PurchaseOrderAssembler } from '../../shared/services/purchase-order.assembler.js';
 
-const baseEndpoint = 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api';
+const baseEndpoint = import.meta.env.VITE_API_BASE_URL+'/api';
 const inventoryPartsEndpoint = `${baseEndpoint}/inventory-parts`;
 
 // Función para obtener el token de autenticación

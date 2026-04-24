@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ProductionLineAssembler } from './production-line.assembler.js';
 import authHeader from "@/shared/infraestructure/auth-header.js";
 
-const baseEndpoint = 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1';
+const baseEndpoint = import.meta.env.VITE_API_BASE_URL+'/api/v1';
 const productionLinesEndpoint = `${baseEndpoint}/production-lines`;
 
 const http = axios.create({

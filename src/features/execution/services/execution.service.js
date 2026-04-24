@@ -254,7 +254,7 @@ export default class ExecutionService {
       const token = localStorage.getItem('token');
       console.log('Token disponible:', !!token);
 
-      const url = 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/image-storage/upload';
+      const url = import.meta.env.VITE_API_BASE_URL+'/api/image-storage/upload';
       const config = {
         headers: {
           'Content-Type': 'multipart/form-data',

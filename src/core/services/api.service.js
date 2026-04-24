@@ -6,7 +6,7 @@ import axios from 'axios';
 class ApiService {
   constructor(baseURL = '') {
     this.client = axios.create({
-      baseURL: baseURL || 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1',
+      baseURL: baseURL || import.meta.env.VITE_API_BASE_URL+'/api/v1',
       headers: {
         'Content-Type': 'application/json'
       },

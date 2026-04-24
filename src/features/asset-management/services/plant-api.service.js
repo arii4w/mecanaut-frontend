@@ -2,7 +2,7 @@
 import axios from 'axios';
 import authHeader from "../../../shared/infraestructure/auth-header.js";
 
-const BASE_URL = 'https://mecanautbk-fffeemd3bqdwebce.centralus-01.azurewebsites.net/api/v1';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL+'/api/v1';
 
 const http = axios.create({
     baseURL: BASE_URL,
