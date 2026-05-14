@@ -384,13 +384,14 @@ const editMachine = () => {
   console.log('La edición de máquinas se manejará de otra manera');
 };
 
-const saveMachine = async (machineData) => {
+const saveMachine = async (createdMachine) => {
   try {
-    await MachineryApiService.createMachine(machineData);
+    // La máquina ya fue creada por el componente hijo interact-machinery
+    console.log('Máquina creada exitosamente:', createdMachine);
     await loadMachineries();
     closeMachineModal();
   } catch (error) {
-    console.error('Error al guardar la máquina:', error);
+    console.error('Error al procesar el guardado de la máquina:', error);
   }
 };
 

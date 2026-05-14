@@ -2,36 +2,37 @@ import axios from 'axios';
 import { MaintenanceDynamicPlanAssembler } from './maintenance-dynamic-plan.assembler.js';
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL+'/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL + '/api',
   timeout: 8000,
 });
 
 // Nueva instancia para la API externa
 const externalHttp = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL+'/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL + '/api',
   timeout: 8000,
 });
 
 // Función para obtener el token de autenticación
 const getAuthToken = () => {
-    return localStorage.getItem('token');
+  return localStorage.getItem('token');
 };
 
 // Interceptor para agregar el token en cada petición a la API externa
 externalHttp.interceptors.request.use((config) => {
-    const token = getAuthToken();
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+  const token = getAuthToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export class MaintenanceDynamicPlanService {
   /* -------- READ ALL -------- */
-  async getAllPlans() {
+  async getAllPlans(plantLineId) {
     const token = localStorage.getItem('token');
+    const queryId = plantLineId || 1;
     const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans?plantLineId=1',
+      import.meta.env.VITE_API_BASE_URL + `/api/v1/dynamic-maintenance-plans?plantLineId=${queryId}`,
       {
         method: 'GET',
         headers: {
@@ -56,7 +57,7 @@ export class MaintenanceDynamicPlanService {
     try {
       const res = await externalHttp.get(`/v1/dynamic-maintenance-plans/${planId}`);
       if (!res.data) return null;
-      
+
       return MaintenanceDynamicPlanAssembler.toModel(res.data);
     } catch (error) {
       console.error('Error al obtener plan dinámico por ID', error);
@@ -83,7 +84,7 @@ export class MaintenanceDynamicPlanService {
       // Enviar POST
       const token = localStorage.getItem('token');
       const response = await fetch(
-        import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans',
+        import.meta.env.VITE_API_BASE_URL + '/api/v1/dynamic-maintenance-plans',
         {
           method: 'POST',
           headers: {
@@ -102,7 +103,12 @@ export class MaintenanceDynamicPlanService {
       }
 
       const text = await response.text();
-      const data = JSON.parse(text);
+      let data = {};
+      try {
+        if (text) data = JSON.parse(text);
+      } catch (e) {
+        console.warn('La respuesta de la API no es un JSON válido:', text);
+      }
       return MaintenanceDynamicPlanAssembler.toModel(data);
     } catch (error) {
       console.error('Error al crear plan dinámico', error);
@@ -122,9 +128,9 @@ export class MaintenanceDynamicPlanService {
         machines: planData.machineIds || [],
         tasks: planData.tasks ? planData.tasks.map(task => task.taskDescription) : []
       };
-      
+
       const res = await externalHttp.put(`/v1/dynamic-maintenance-plans/${planData.id}`, planForServer);
-      
+
       if (!res.data) return null;
       return MaintenanceDynamicPlanAssembler.toModel(res.data);
     } catch (error) {
@@ -145,7 +151,7 @@ export class MaintenanceDynamicPlanService {
   }
 
   /* -------- EXTERNAL API ENDPOINTS -------- */
-  
+
   /**
    * Obtiene todas las plantas disponibles
    * @returns {Promise<Array>} - Lista de plantas

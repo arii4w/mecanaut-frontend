@@ -11,12 +11,8 @@ export class WorkOrderService {
    */
   static async getOrders(productionLineId = null) {
     try {
-      let endpoint = '/work-orders';
-      
-      if (productionLineId) {
-        endpoint = `/work-orders/by-production-line/${productionLineId}`;
-      }
-      
+      let endpoint = `/work-orders/by-production-line/${productionLineId}`;
+            
       const response = await apiService.get(endpoint);
       return response.data.map(order => new WorkOrderEntity(order));
     } catch (error) {

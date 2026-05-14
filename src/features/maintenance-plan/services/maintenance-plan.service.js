@@ -2,16 +2,17 @@ import axios from 'axios';
 import { MaintenancePlanAssembler } from './maintenance-plan.assembler';
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans',
+  baseURL: import.meta.env.VITE_API_BASE_URL + '/api/v1/dynamic-maintenance-plans',
   timeout: 8000,
 });
 
 export class MaintenancePlanService {
   /* -------- READ ALL -------- */
-  async getAllPlans() {
+  async getAllPlans(plantLineId) {
     const token = localStorage.getItem('token');
+    const queryId = plantLineId || 1;
     const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL+'/api/v1/dynamic-maintenance-plans?plantLineId=1',
+      import.meta.env.VITE_API_BASE_URL + `/api/v1/dynamic-maintenance-plans?plantLineId=${queryId}`,
       {
         method: 'GET',
         headers: {
@@ -42,22 +43,22 @@ export class MaintenancePlanService {
     try {
       // Primero, obtener los datos actuales
       const currentData = await http.get('/');
-      
+
       // Obtener el máximo planId existente
       let maxPlanId = 0;
       if (currentData.data && Array.isArray(currentData.data.data)) {
         maxPlanId = currentData.data.data.reduce((max, plan) => Math.max(max, plan.planId || 0), 0);
       }
-      
+
       // Asignar un nuevo planId secuencial (el siguiente número)
       const newPlanId = maxPlanId + 1;
-      
+
       // Asegurarse de que el plan tenga un ID único
       const planWithId = {
         ...planModel,
         planId: newPlanId
       };
-      
+
       // Encontrar el ID de tarea más alto en todos los planes para mantener secuencia
       let maxTaskId = 0;
       if (currentData.data && Array.isArray(currentData.data.data)) {
@@ -75,7 +76,7 @@ export class MaintenancePlanService {
           }
         });
       }
-      
+
       // Asignar IDs secuenciales a las tareas
       let taskIdCounter = maxTaskId + 1;
       if (planWithId.items && Array.isArray(planWithId.items)) {
@@ -87,26 +88,26 @@ export class MaintenancePlanService {
           }
         });
       }
-      
+
       // Crear el recurso con el assembler
       const planResource = MaintenancePlanAssembler.toResource(planWithId);
-      
+
       // Añadir el nuevo plan a la lista existente
       const updatedData = {
-        info: currentData.data.info || [{registers: 0}],
+        info: currentData.data.info || [{ registers: 0 }],
         data: [...(currentData.data.data || []), planResource]
       };
-      
+
       // Actualizar el contador de registros
       if (updatedData.info && Array.isArray(updatedData.info) && updatedData.info.length > 0) {
         updatedData.info[0].registers = updatedData.data.length;
       }
-      
+
       console.log('Actualizando data con:', updatedData);
-      
+
       // Enviar la lista completa actualizada
       const res = await http.put('/', updatedData);
-      
+
       return MaintenancePlanAssembler.toModel(planResource);
     } catch (error) {
       console.error('Error al crear el plan de mantenimiento:', error);
@@ -119,28 +120,28 @@ export class MaintenancePlanService {
     try {
       // Primero, obtener los datos actuales
       const currentData = await http.get('/');
-      
+
       // Encontrar el índice del plan a actualizar
       const planIndex = currentData.data.data.findIndex(p => p.planId === planModel.planId);
-      
+
       if (planIndex === -1) {
         throw new Error(`Plan con ID ${planModel.planId} no encontrado.`);
       }
-      
+
       // Crear el recurso actualizado con el assembler
       const updatedPlanResource = MaintenancePlanAssembler.toResource(planModel);
-      
+
       // Actualizar el plan en la lista
       const updatedData = {
         ...currentData.data,
         data: [...currentData.data.data]
       };
-      
+
       updatedData.data[planIndex] = updatedPlanResource;
-      
+
       // Enviar la lista completa actualizada
       await http.put('/', updatedData);
-      
+
       return planModel;
     } catch (error) {
       console.error('Error al actualizar el plan de mantenimiento:', error);
@@ -153,21 +154,21 @@ export class MaintenancePlanService {
     try {
       // Primero, obtener los datos actuales
       const currentData = await http.get('/');
-      
+
       // Filtrar el plan a eliminar
       const updatedData = {
         ...currentData.data,
         data: currentData.data.data.filter(p => p.planId !== planId)
       };
-      
+
       // Actualizar el contador de registros
       if (updatedData.info && Array.isArray(updatedData.info) && updatedData.info.length > 0) {
         updatedData.info[0].registers = updatedData.data.length;
       }
-      
+
       // Enviar la lista actualizada
       await http.put('/', updatedData);
-      
+
       return true;
     } catch (error) {
       console.error('Error al eliminar el plan de mantenimiento:', error);
