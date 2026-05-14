@@ -112,6 +112,8 @@ const emit = defineEmits(['close', 'planCreated']);
 // Variables para máquinas disponibles
 const availableMachines = ref([]);
 const selectedMachines = ref([]);
+const currentPlantId = ref(null);
+const currentProductionLineId = ref(null);
 const formData = ref({
   planName: '',
   parameter: '',
@@ -140,6 +142,7 @@ const loadMachines = async () => {
     if (plants.length > 0) {
       // Usar la primera planta por defecto
       const firstPlant = plants[0];
+      currentPlantId.value = firstPlant.id;
       
       // Obtener líneas de producción de la primera planta
       const productionLines = await MachineParametersService.getProductionLinesByPlant(firstPlant.id);
@@ -147,6 +150,7 @@ const loadMachines = async () => {
       if (productionLines.length > 0) {
         // Usar la primera línea de producción por defecto
         const firstProductionLine = productionLines[0];
+        currentProductionLineId.value = firstProductionLine.id;
         
         // Obtener máquinas de la primera línea de producción
         const machines = await MachineParametersService.getMachineriesByProductionLine(firstProductionLine.id);
@@ -227,8 +231,10 @@ const savePlan = async () => {
     // Crear el objeto de plan dinámico
     const dynamicPlan = {
       planName: formData.value.planName,
-      parameter: formData.value.parameter,
-      amount: formData.value.amount,
+      parameter: parseInt(formData.value.parameter, 10),
+      amount: Number(formData.value.amount),
+      productionLineId: currentProductionLineId.value,
+      plantLineId: currentPlantId.value,
       machineIds: [...selectedMachines.value],
       tasks: formData.value.tasks.map(task => ({
         taskName: task.taskName,
