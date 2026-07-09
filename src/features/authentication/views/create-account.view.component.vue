@@ -6,6 +6,7 @@ import LanguageSwitcher from '../../../shared/components/language-switcher.compo
 import { useI18n } from 'vue-i18n';
 import Button from '../../../shared/components/button.component.vue';
 import AuthService from '../services/auth.service';
+import { TelemetryService } from '../../../core/services/telemetry.service';
 
 export default {
   name: 'register',
@@ -213,9 +214,28 @@ export default {
         };
 
         await AuthService.register(registrationData);
+        
+        // Telemetría del Experimento IAM-UX (Control)
+        await TelemetryService.recordMetric({
+          experimentName: "IAM-UX",
+          variant: "Control",
+          actionType: "User_Registered_Autonomous",
+          isSuccess: true,
+          additionalData: `planId: ${registerForm.subscriptionPlanId}`
+        });
+
         router.push('/login?registered=true');
       } catch (error) {
         errorMessage.value = error.message;
+        
+        // Telemetría de Falla
+        await TelemetryService.recordMetric({
+          experimentName: "IAM-UX",
+          variant: "Control",
+          actionType: "User_Registered_Autonomous",
+          isSuccess: false,
+          additionalData: error.message || 'Registration failed'
+        });
       } finally {
         isLoading.value = false;
       }

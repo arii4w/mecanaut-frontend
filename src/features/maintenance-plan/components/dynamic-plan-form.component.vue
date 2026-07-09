@@ -106,8 +106,15 @@
 import { ref, computed, onMounted } from 'vue';
 import { maintenanceDynamicPlanService } from '../services/maintenance-dynamic-plan.service.js';
 import { MachineParametersService } from '../../machine-parameters/services/machine-parameters.service.js';
+import { TelemetryService } from '@/core/services/telemetry.service.js';
 
 const emit = defineEmits(['close', 'planCreated']);
+
+const startTime = ref(0);
+
+onMounted(() => {
+  startTime.value = Date.now();
+});
 
 // Variables para máquinas disponibles
 const availableMachines = ref([]);
@@ -246,11 +253,30 @@ const savePlan = async () => {
     
     // Enviar al servicio
     const savedPlan = await maintenanceDynamicPlanService.createPlan(dynamicPlan);
+    
+    // Telemetría del Experimento EC-01 (Control)
+    const duration = Date.now() - startTime.value;
+    await TelemetryService.recordMetric({
+      experimentName: "EC-01",
+      variant: "Control",
+      actionType: "Plan_Created_Success",
+      durationMilliseconds: duration,
+      isSuccess: true
+    });
+
     emit('planCreated', savedPlan);
     close();
   } catch (error) {
     console.error("Error al guardar el plan:", error);
-    // Aquí podrías mostrar un mensaje de error
+    
+    // Telemetría de Falla
+    await TelemetryService.recordMetric({
+      experimentName: "EC-01",
+      variant: "Control",
+      actionType: "Plan_Created_Failed",
+      isSuccess: false,
+      additionalData: error.message || 'Error al guardar el plan'
+    });
   }
 };
 
