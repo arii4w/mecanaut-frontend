@@ -297,6 +297,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ExecutionService from '../services/execution.service';
+import { TelemetryService } from '../../../core/services/telemetry.service';
 
 export default {
   name: 'ExecutionView',
@@ -405,7 +406,8 @@ export default {
               products: [{ partId: '', quantity: 1 }],
               // NUEVO: Guardamos las tareas aquí y las clonamos para que sean independientes
               tasks: getTasksForOrder(order).map(t => ({ ...t })),
-              observations: ''
+              observations: '',
+              startTime: Date.now() // Telemetría
             };
           }
         });
@@ -806,6 +808,16 @@ export default {
         // Completar la orden
         await ExecutionService.completeWorkOrder(orderId, completionData);
 
+        // Telemetría del Experimento EC-02 (Control)
+        const duration = Date.now() - (data.startTime || Date.now());
+        await TelemetryService.recordMetric({
+          experimentName: "EC-02",
+          variant: "Control",
+          actionType: "Work_Order_Closed",
+          durationMilliseconds: duration,
+          isSuccess: true
+        });
+
         // Reducir stock de productos utilizados
         for (const product of data.products.filter(p => p.partId && p.quantity > 0)) {
           await ExecutionService.decreaseInventoryPart(product.partId, product.quantity);
@@ -825,6 +837,15 @@ export default {
           errorMessage = error.message;
         }
         
+        // Telemetría de Falla
+        await TelemetryService.recordMetric({
+          experimentName: "EC-02",
+          variant: "Control",
+          actionType: "Work_Order_Closed",
+          isSuccess: false,
+          additionalData: errorMessage
+        });
+
         alert(errorMessage);
       }
     };
